@@ -2,7 +2,7 @@ from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.orm import Session
 from app.database import get_db
-from app.models import User
+from app.models import User, UserRole
 from app.auth import decode_token, TokenType
 
 bearer_scheme = HTTPBearer(auto_error=True)
@@ -40,3 +40,11 @@ def get_current_user(
         )
 
     return user
+
+def require_role(required: UserRole):
+    def role_checker(user: User = Depends(get_current_user)):
+        if user.role != required:
+            raise HTTPException(status_code=403, detail="Forbidden: insufficient role")
+        return user
+    return role_checker
+    

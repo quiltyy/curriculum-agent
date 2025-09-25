@@ -24,11 +24,12 @@ def user_payload():
 
 
 def test_register_login_me_refresh_logout(user_payload):
-    # Register
-    r = client.post("/auth/register", json=user_payload)
+    # Register with role = advisor
+    r = client.post("/auth/register", json={**user_payload, "role": "advisor"})
     assert r.status_code == 201
     data = r.json()
     assert data["email"] == user_payload["email"]
+    assert data["role"] == "advisor"
 
     # Login
     r = client.post("/auth/login", json=user_payload)
@@ -57,3 +58,46 @@ def test_register_login_me_refresh_logout(user_payload):
     # Old token should be invalid
     r = client.get("/auth/me", headers=headers)
     assert r.status_code == 401
+
+def test_role_based_access():
+    # Register an admin user
+    r = client.post(
+        "/auth/register",
+        json={"email": "admin@example.com", "password": "Secret123!", "role": "admin"},
+    )
+    assert r.status_code == 201
+    admin_data = r.json()
+    assert admin_data["role"] == "admin"
+
+    # Login as admin
+    r = client.post(
+        "/auth/login",
+        json={"email": "admin@example.com", "password": "Secret123!"},
+    )
+    tokens = r.json()
+    headers = {"Authorization": f"Bearer {tokens['access_token']}"}
+
+    # Admin should succeed on /admin/only
+    r = client.get("/admin/only", headers=headers)
+    assert r.status_code == 200
+    assert "Hello admin" in r.json()["msg"]
+
+    # Register a student
+    r = client.post(
+        "/auth/register",
+        json={"email": "student@example.com", "password": "Secret123!", "role": "student"},
+    )
+    assert r.status_code == 201
+
+    # Login as student
+    r = client.post(
+        "/auth/login",
+        json={"email": "student@example.com", "password": "Secret123!"},
+    )
+    student_tokens = r.json()
+    student_headers = {"Authorization": f"Bearer {student_tokens['access_token']}"}
+
+    # Student should be forbidden on /admin/only
+    r = client.get("/admin/only", headers=student_headers)
+    assert r.status_code == 403
+    assert r.json()["detail"] == "Forbidden: insufficient role"

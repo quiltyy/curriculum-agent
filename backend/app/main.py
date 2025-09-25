@@ -81,17 +81,22 @@ def refresh(payload: RefreshIn, db: Session = Depends(get_db)):
     return TokenOut(access_token=access, refresh_token=refresh_token)
 
 
-@app.post("/auth/logout", response_model=MeOut)
-def logout(
-    current_user: User = Depends(get_current_user), db: Session = Depends(get_db)
-):
-    current_user.token_version += 1
-    db.add(current_user)
+@app.post("/auth/register", response_model=MeOut, status_code=201)
+def register(payload: RegisterIn, db: Session = Depends(get_db)):
+    existing = db.query(User).filter(User.email == payload.email).first()
+    if existing:
+        raise HTTPException(status_code=400, detail="Email already registered")
+    user = User(
+        email=payload.email,
+        password_hash=hash_password(payload.password),
+        role=payload.role,
+    )
+    db.add(user)
     db.commit()
-    db.refresh(current_user)
-    return MeOut(id=current_user.id, email=current_user.email)
+    db.refresh(user)
+    return MeOut(id=user.id, email=user.email, role=user.role)
 
+@app.get("/auth/me", response_model=MeOut)
+def me(current_user: User = Depends(get_current_user)):
+    return MeOut(id=current_user.id, email=current_user.email, role=current_user.role)
 
-@app.get("/")
-def root():
-    return {"status": "ok"}

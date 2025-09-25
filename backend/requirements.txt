@@ -1,12 +1,21 @@
+# Web framework
 fastapi==0.114.1
 uvicorn[standard]==0.30.6
+
+# Database + ORM
 SQLAlchemy==2.0.35
-psycopg2-binary==2.9.9
+psycopg2-binary>=2.9.10,<3.0   # prebuilt wheels, Windows/Docker safe
+
+# Security / Auth
 passlib[bcrypt]==1.7.4
+bcrypt==4.1.2                  # explicit, avoids Windows issues
 PyJWT==2.9.0
+python-jose[cryptography]==3.3.0
+
+# Config & Validation
 python-dotenv==1.0.1
-pydantic==2.9.2
+pydantic[email]==2.9.2         # includes email-validator
+
+# Testing
 pytest==8.3.3
 httpx==0.27.2
-pydantic[email]==2.9.2
-bcrypt==4.1.2

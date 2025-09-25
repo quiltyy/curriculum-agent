@@ -1,60 +1,75 @@
-import time
-import uuid
-import jwt
+from datetime import datetime, timedelta, timezone
+from typing import Optional
+
+from fastapi import Depends, HTTPException
+from fastapi.security import OAuth2PasswordBearer
+from jose import jwt, JWTError
 from passlib.context import CryptContext
-from typing import Literal
-from app.config import settings
+from sqlalchemy.orm import Session
+
+from app.models import User
+from app.database import get_db
+
+# Security settings
+SECRET_KEY = "supersecret"  # ⚠️ replace with env var in production
+ALGORITHM = "HS256"
+ACCESS_TOKEN_EXPIRE_MINUTES = 30
+REFRESH_TOKEN_EXPIRE_DAYS = 7
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-ALGORITHM = "HS256"
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")
+
+
+# Password utilities
+def hash_password(plain: str) -> str:
+    return pwd_context.hash(plain)
 
 
 def verify_password(plain: str, hashed: str) -> bool:
     return pwd_context.verify(plain, hashed)
 
 
-def hash_password(plain: str) -> str:
-    return pwd_context.hash(plain)
-
-
-class TokenType:
-    ACCESS: Literal["access"] = "access"
-    REFRESH: Literal["refresh"] = "refresh"
-
-
-def _make_token(
-    sub: int, token_version: int, token_type: str, expires_in_seconds: int
-) -> str:
-    now = int(time.time())
-    payload = {
-        "sub": str(sub),
-        "iat": now,
-        "nbf": now,
-        "exp": now + expires_in_seconds,
-        "jti": str(uuid.uuid4()),
-        "type": token_type,
-        "tv": token_version,
-    }
-    return jwt.encode(payload, settings.SECRET_KEY, algorithm=ALGORITHM)
-
-
-def create_access_token(user_id: int, token_version: int) -> str:
-    return _make_token(
-        sub=user_id,
-        token_version=token_version,
-        token_type=TokenType.ACCESS,
-        expires_in_seconds=settings.ACCESS_TOKEN_EXPIRES_MIN * 60,
+# JWT utilities
+def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -> str:
+    to_encode = data.copy()
+    expire = datetime.now(timezone.utc) + (
+        expires_delta or timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     )
 
+    to_encode.update({"exp": expire})
+    return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
 
-def create_refresh_token(user_id: int, token_version: int) -> str:
-    return _make_token(
-        sub=user_id,
-        token_version=token_version,
-        token_type=TokenType.REFRESH,
-        expires_in_seconds=settings.REFRESH_TOKEN_EXPIRES_DAYS * 86400,
+
+def create_refresh_token(data: dict, expires_delta: Optional[timedelta] = None) -> str:
+    to_encode = data.copy()
+    expire = datetime.now(timezone.utc) + (
+        expires_delta or timedelta(days=REFRESH_TOKEN_EXPIRE_DAYS)
     )
+
+    to_encode.update({"exp": expire, "type": "refresh"})
+    return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
 
 
 def decode_token(token: str) -> dict:
-    return jwt.decode(token, settings.SECRET_KEY, algorithms=[ALGORITHM])
+    try:
+        return jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+    except JWTError:
+        raise HTTPException(status_code=401, detail="Invalid or expired token")
+
+
+# Dependency to get current logged-in user
+def get_current_user(
+    token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)
+) -> User:
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        user_id: int = payload.get("user_id")
+        if user_id is None:
+            raise HTTPException(status_code=401, detail="Invalid token")
+    except JWTError:
+        raise HTTPException(status_code=401, detail="Invalid or expired token")
+
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=401, detail="User not found")
+    return user

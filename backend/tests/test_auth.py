@@ -4,7 +4,9 @@ import pytest
 from fastapi.testclient import TestClient
 
 # Force SQLite for tests
-os.environ.setdefault("DATABASE_URL", "sqlite:///" + os.path.join(tempfile.gettempdir(), "test_auth.db"))
+os.environ.setdefault(
+    "DATABASE_URL", "sqlite:///" + os.path.join(tempfile.gettempdir(), "test_auth.db")
+)
 os.environ.setdefault("SECRET_KEY", "test-secret")
 
 from app.main import app
@@ -15,9 +17,11 @@ Base.metadata.create_all(bind=engine)
 
 client = TestClient(app)
 
+
 @pytest.fixture
 def user_payload():
     return {"email": "user@example.com", "password": "P@ssw0rd!"}
+
 
 def test_register_login_me_refresh_logout(user_payload):
     # Register

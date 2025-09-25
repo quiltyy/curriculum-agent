@@ -1,6 +1,7 @@
 from pydantic import BaseModel
 import os
 
+
 class Settings(BaseModel):
     SECRET_KEY: str = os.getenv("SECRET_KEY", "change-me")
     ACCESS_TOKEN_EXPIRES_MIN: int = int(os.getenv("ACCESS_TOKEN_EXPIRES_MIN", "15"))
@@ -11,5 +12,6 @@ class Settings(BaseModel):
     )
     APP_HOST: str = os.getenv("APP_HOST", "0.0.0.0")
     APP_PORT: int = int(os.getenv("APP_PORT", "8000"))
+
 
 settings = Settings()

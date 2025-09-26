@@ -20,7 +20,7 @@ cd "C:\\Users\\acham\\OneDrive\\Desktop\\curriculum-agent" (Desktop)
 
 **# Run Backend Tests**
 
-pytest -q backend/tests
+pytest -q backend/testsc
 
 
 
@@ -30,5 +30,7 @@ pip install -r requirements.txt
 
 
 
+**#Close .venv**
 
+deactivate
 

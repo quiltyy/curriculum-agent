@@ -1,0 +1,8 @@
+program,course_code,course_name,credits,description,prerequisites
+BS Computer Science,CS101,Intro to CS,4,Basics of computing,
+BS Computer Science,CS102,Data Structures,4,Core data structures,CS101
+BS Computer Science,CS201,Algorithms,4,Algorithm design,CS102
+BS Computer Science,BIO300,Advanced Biology,4,Advanced topics in biology,"BIO252 OR BIO253 AND TCHEM212"
+BS Computer Science,BIO252,Cell Biology,4,Intro to cells,
+BS Computer Science,BIO253,Genetics,4,Genetics basics,
+BS Computer Science,TCHEM212,Organic Chemistry,4,Organic molecules,

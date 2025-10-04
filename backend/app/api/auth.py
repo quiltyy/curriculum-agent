@@ -7,8 +7,8 @@ from jose import jwt, JWTError
 from passlib.context import CryptContext
 from sqlalchemy.orm import Session
 
-from app.models import User
-from app.database import get_db
+from backend.app.db.models import User
+from backend.app.db.database import get_db
 
 # Security settings
 SECRET_KEY = "supersecret"  # ⚠️ replace with env var in production
@@ -16,7 +16,7 @@ ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
 REFRESH_TOKEN_EXPIRE_DAYS = 7
 
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+pwd_context = CryptContext(schemes=["bcrypt_sha256"], deprecated="auto")
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")
 
 
@@ -69,7 +69,7 @@ def get_current_user(
     except JWTError:
         raise HTTPException(status_code=401, detail="Invalid or expired token")
 
-    user = db.query(User).filter(User.id == user_id).first()
+    user = db.query(User).filter(User.user_id == user_id).first()
     if not user:
         raise HTTPException(status_code=401, detail="User not found")
     return user

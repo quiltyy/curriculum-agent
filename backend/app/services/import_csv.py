@@ -4,7 +4,7 @@ from sqlalchemy import create_engine, text
 DATABASE_URL = "postgresql+psycopg2://postgres:postgres@localhost:5432/curriculumdb"
 engine = create_engine(DATABASE_URL, echo=True)
 
-CSV_PATH = "test_data/test_courses.csv"  # relative to backend/
+CSV_PATH = "tests/data/test_courses.csv"  # relative to backend/
 
 
 def parse_prerequisites(prereq_str):

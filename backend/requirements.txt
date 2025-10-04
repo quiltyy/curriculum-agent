@@ -22,3 +22,5 @@ httpx
 
 # Utilities
 python-dotenv
+networkx
+pydantic-settings
